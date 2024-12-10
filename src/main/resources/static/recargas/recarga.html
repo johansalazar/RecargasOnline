@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Recargas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+</head>
+<body>
+<div class="container">
+  <h1 class="center-align">Recarga</h1>
+
+  <form id="recargaForm">
+    <div class="input-field">
+      <input type="number" id="valor" name="valor" class="validate" required>
+      <label for="valor">Valor:</label>
+    </div>
+    <div>
+      <label for="fecha">Fecha:</label>
+      <input type="datetime-local" id="fecha" name="fecha" class="validate" required>
+    </div>
+    <div>
+      <label>Operador:</label>
+      <select id="operador" name="operador" class="browser-default" required>
+        <option value="0" disabled selected>Seleccione un operador</option>
+        <!-- Las opciones se llenarán mediante JavaScript -->
+      </select>
+
+    </div>
+    <div>
+      <label>Vendedor:</label>
+      <select id="vendedor" name="vendedor" class="browser-default" required>
+        <option value="0" disabled selected>Seleccione un vendedor</option>
+        <!-- Las opciones se llenarán mediante JavaScript -->
+      </select>
+    </div>
+    <div class="input-field">
+      <button id="guardarBtn" class="btn green waves-effect waves-light" type="submit">Guardar</button>
+      <button id="cancelarBtn" class="btn orange waves-effect waves-light" type="button" onclick="volverInicio()">Cancelar</button>
+    </div>
+  </form>
+
+  <h2 class="center-align">Lista de Recargas</h2>
+  <ul id="recargaList" class="collection"></ul>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+  function fetchRecargas() {
+    fetch('/api/recargas')
+            .then(response => response.json())
+            .then(recargas => {
+              const recargaList = document.getElementById('recargaList');
+              recargaList.innerHTML = '';
+
+              recargas.forEach(recarga => {
+                Promise.all([
+                  fetch(`/api/operadores/${recarga.operadorId}`).then(res => res.json()),
+                  fetch(`/api/vendedores/${recarga.vendedorId}`).then(res => res.json())
+                ]).then(([operador, vendedor]) => {
+                  const li = document.createElement('li');
+                  li.className = 'collection-item';
+                  li.innerHTML = `
+              ${operador.nombre} - ${vendedor.nombre} - $ ${recarga.valor} - ${recarga.fecha}
+              <button class="btn red waves-effect waves-light right" onclick="eliminarRecarga(${recarga.id})">Eliminar</button>
+            `;
+                  recargaList.appendChild(li);
+                }).catch(error => console.error('Error fetching details:', error));
+              });
+            })
+            .catch(error => console.error('Error fetching recargas:', error));
+  }
+
+  document.getElementById('recargaForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    // Obtener los valores de los campos
+    const valor = document.getElementById('valor').value;
+    const fecha = document.getElementById('fecha').value;
+    const operadorId = document.getElementById('operador').value;
+    const vendedorId = document.getElementById('vendedor').value;
+
+    // Validar que se haya seleccionado un valor válido para operador y vendedor
+    if (operadorId === '0' || vendedorId === '0') {
+      alert('Por favor, seleccione un operador y un vendedor válidos.');
+      return;
+    }
+
+    // Enviar los datos al servidor
+    fetch('/api/recargas', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ valor, fecha, operadorId, vendedorId })
+    })
+            .then(response => response.json())
+            .then(() => fetchRecargas())
+            .catch(error => console.error('Error:', error));
+  });
+
+  function eliminarRecarga(id) {
+    fetch(`/api/recargas/${id}`, {
+      method: 'DELETE'
+    })
+            .then(() => fetchRecargas())
+            .catch(error => console.error('Error:', error));
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    fetchRecargas();
+    fetchOperadores();
+    fetchVendedores();
+  });
+
+  function volverInicio() {
+    window.location.href = '/';
+  }
+
+  function fetchOperadores() {
+    // Ejemplo de fetch para obtener operadores
+    fetch('/api/operadores')
+            .then(response => response.json())
+            .then(data => {
+              const selectOperador = document.getElementById('operador');
+              data.forEach(operador => {
+                const option = document.createElement('option');
+                option.value = operador.id;
+                option.textContent = operador.nombre;
+                selectOperador.appendChild(option);
+              });
+              M.FormSelect.init(selectOperador); // Inicializa el select con Materialize
+            });
+  }
+
+  function fetchVendedores() {
+    // Ejemplo de fetch para obtener vendedores
+    fetch('/api/vendedores')
+            .then(response => response.json())
+            .then(data => {
+              const selectVendedor = document.getElementById('vendedor');
+              data.forEach(vendedor => {
+                const option = document.createElement('option');
+                option.value = vendedor.id;
+                option.textContent = vendedor.nombre;
+                selectVendedor.appendChild(option);
+              });
+              M.FormSelect.init(selectVendedor); // Inicializa el select con Materialize
+            });
+  }
+</script>
+</body>
+</html>
