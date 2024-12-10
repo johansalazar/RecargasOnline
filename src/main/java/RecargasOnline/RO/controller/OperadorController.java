@@ -16,21 +16,31 @@ public class OperadorController {
     public OperadorController(OperadorService operadorService) {
         this.operadorService = operadorService;
     }
+    @CrossOrigin(origins = "http://localhost:4200")
     @GetMapping("/{id}")
     public Operador getOperadorById(@PathVariable int id) {
         return operadorService.findById(id);
     }
 
+    @CrossOrigin(origins = "http://localhost:4200")
     @GetMapping
     public List<Operador> getAllOperadores() {
         return operadorService.getAllOperadores();
     }
 
+    @CrossOrigin(origins = "http://localhost:4200")
     @PostMapping
     public Operador saveOperador(@RequestBody Operador operador) {
         return operadorService.saveOperador(operador);
     }
 
+    @CrossOrigin(origins = "http://localhost:4200")
+    @PutMapping
+    public Operador updateOperador(@RequestBody Operador operador) {
+        return operadorService.updateOperador(operador);
+    }
+
+    @CrossOrigin(origins = "http://localhost:4200")
     @DeleteMapping("/{id}")
     public void deleteOperador(@PathVariable int id) {
         operadorService.deleteOperador(id);
